@@ -58,7 +58,7 @@ export const useStore = create<ForkFleetState>((set) => ({
   loadStaticUniverse: async () => {
     set({ loading: true, error: null });
     try {
-      const response = await fetch('/data/universe.json');
+      const response = await fetch(`${window.location.pathname.startsWith('/ForkFleet') ? '/ForkFleet' : ''}/data/universe.json`);
       if (!response.ok) throw new Error('Static Universe not found');
       const data: UniverseData = await response.json();
       set({ graph: parseTypedGraph(data), loading: false });
@@ -70,30 +70,15 @@ export const useStore = create<ForkFleetState>((set) => ({
 
   fetchGraph: async (owner, repo) => {
     set({ loading: true, error: null, currentRepo: { owner, repo }, selectedNodeIndex: null });
+    // In static mode, we only navigate to the precomputed universe
     try {
-      const response = await fetch(`/api/forks?owner=${owner}&repo=${repo}`);
-      if (!response.ok) {
-        if (response.status === 429) {
-          // BUDGET EXCEEDED: Failover smoothly to Static Universe
-          const staticResp = await fetch('/data/universe.json');
-          if (staticResp.ok) {
-            const staticData: UniverseData = await staticResp.json();
-            set({ 
-                graph: parseTypedGraph(staticData), 
-                loading: false, 
-                error: 'HIGH TRAFFIC MODE: NAVIGATING CACHED SECTOR' 
-            });
-            return;
-          }
-        }
-        const errorData: { error?: string } = await response.json();
-        throw new Error(errorData.error || 'Failed to fetch graph data');
+      const response = await fetch(`${window.location.pathname.startsWith('/ForkFleet') ? '/ForkFleet' : ''}/data/universe.json`);
+      if (response.ok) {
+        const data: UniverseData = await response.json();
+        set({ graph: parseTypedGraph(data), loading: false });
       }
-      const data: UniverseData = await response.json();
-      set({ graph: parseTypedGraph(data), loading: false });
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'An unknown error occurred';
-      set({ error: message, loading: false });
+      set({ error: 'Navigation limited in static mode', loading: false });
     }
   },
 }));
