@@ -36,7 +36,12 @@ function StarshipPanel() {
   }, [vitality, selectedIdx]);
 
   if (selectedIdx === null || !graph) return null;
-  
+
+  // Use graph data by default
+  const name = graph.nodeData[selectedIdx * 3 + 2] === 1 && useStore.getState().metadata?.name 
+    ? useStore.getState().metadata?.name 
+    : `SECTOR-${selectedIdx}`;
+
   return (
     <div className="glass ship-panel space-panel intelligence-suite">
         <div className="panel-header">
@@ -45,6 +50,10 @@ function StarshipPanel() {
                 <span>{isRoot ? 'PULSAR CORE' : (innovation > 0.6 ? 'INNOVATION POD' : 'INTERCEPTOR')}</span>
             </div>
             <X size={18} className="close-btn" onClick={() => setSelectedNode(null)} />
+        </div>
+
+        <div className="repo-header-mini">
+            <span className="repo-name-mini">{name}</span>
         </div>
         
         <div className="intelligence-grid">
@@ -74,6 +83,34 @@ function StarshipPanel() {
         </div>
     </div>
   );
+}
+
+function SearchIntelligenceHUD() {
+    const metadata = useStore((state) => state.metadata);
+    if (!metadata) return null;
+
+    return (
+        <div className="glass search-intelligence-hud fadeIn">
+            <div className="metadata-header">
+                <img src={metadata.avatar} alt="" className="meta-avatar" />
+                <div className="meta-info">
+                    <span className="meta-title">{metadata.name}</span>
+                    <span className="meta-lang">{metadata.language}</span>
+                </div>
+            </div>
+            <p className="meta-desc">{metadata.description}</p>
+            <div className="meta-stats">
+                <div className="meta-stat">
+                    <span className="stat-label">STARS</span>
+                    <span className="stat-value">{metadata.stars.toLocaleString()}</span>
+                </div>
+                <div className="meta-stat">
+                    <span className="stat-label">FORKS</span>
+                    <span className="stat-value">{metadata.forks.toLocaleString()}</span>
+                </div>
+            </div>
+        </div>
+    );
 }
 
 export default function Home() {
@@ -203,6 +240,7 @@ export default function Home() {
                 </div>
             )}
 
+            <SearchIntelligenceHUD />
             <StarshipPanel />
 
             {/* Software Evolution Timeline */}

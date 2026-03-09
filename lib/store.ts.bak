@@ -11,14 +11,6 @@ interface ForkFleetState {
   selectedNodeIndex: number | null;
   timelineYear: number;
   isLaunched: boolean;
-  metadata: {
-    name: string;
-    description: string;
-    avatar: string;
-    stars: number;
-    forks: number;
-    language: string;
-  } | null;
   
   fetchGraph: (owner: string, repo: string) => Promise<void>;
   loadStaticUniverse: () => Promise<void>;
@@ -57,7 +49,6 @@ export const useStore = create<ForkFleetState>((set) => ({
   selectedNodeIndex: null,
   timelineYear: 2025,
   isLaunched: false,
-  metadata: null,
 
   setLaunched: (val) => set({ isLaunched: val }),
   setCameraMode: (mode) => set({ cameraMode: mode }),
@@ -78,35 +69,16 @@ export const useStore = create<ForkFleetState>((set) => ({
   },
 
   fetchGraph: async (owner, repo) => {
-    set({ loading: true, error: null, currentRepo: { owner, repo }, selectedNodeIndex: null, metadata: null });
-    
+    set({ loading: true, error: null, currentRepo: { owner, repo }, selectedNodeIndex: null });
+    // In static mode, we only navigate to the precomputed universe
     try {
-      // 1. Fetch live repository metadata for the HUD
-      const repoResp = await fetch(`https://api.github.com/repos/${owner}/${repo}`);
-      if (repoResp.ok) {
-        const repoData = await repoResp.json();
-        set({ metadata: {
-          name: repoData.full_name,
-          description: repoData.description || 'NO DESCRIPTION AVAILABLE',
-          avatar: repoData.owner.avatar_url,
-          stars: repoData.stargazers_count,
-          forks: repoData.forks_count,
-          language: repoData.language || 'UNKNOWN'
-        }});
-      }
-
-      // 2. Fetch graph data (Fails over to static universe if target is not precomputed)
-      // Note: In strict static mode, we primarily serve the precomputed universe.json
       const response = await fetch(`${window.location.pathname.startsWith('/ForkFleet') ? '/ForkFleet' : ''}/data/universe.json`);
       if (response.ok) {
         const data: UniverseData = await response.json();
         set({ graph: parseTypedGraph(data), loading: false });
-      } else {
-          throw new Error('Sector data unavailable');
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Navigation limited: Out of sector';
-      set({ error: msg, loading: false });
+      set({ error: 'Navigation limited in static mode', loading: false });
     }
   },
 }));
