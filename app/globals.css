@@ -696,6 +696,8 @@ body {
     display: -webkit-box;
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
+    line-clamp: 3;
+   
     overflow: hidden;
 }
 
@@ -724,4 +726,13 @@ body {
     letter-spacing: 1px;
     color: rgba(255, 255, 255, 0.4);
     text-transform: uppercase;
+}
+
+.parallax-element {
+    transition: transform 0.1s cubic-bezier(0.1, 0, 0.1, 1);
+    transform: translate(var(--mx), var(--my));
+}
+
+.gps-input:focus-within {
+    transform: translate(var(--mx), var(--my)) scale(1.02);
 }

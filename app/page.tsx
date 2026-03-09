@@ -43,7 +43,7 @@ function StarshipPanel() {
     : `SECTOR-${selectedIdx}`;
 
   return (
-    <div className="glass ship-panel space-panel intelligence-suite">
+    <div className="glass ship-panel space-panel intelligence-suite parallax-element">
         <div className="panel-header">
             <div className="panel-title">
                 {isRoot ? <Target size={18} color="#fbbf24" /> : <Rocket size={18} color={innovation > 0.6 ? '#4ade80' : '#3b82f6'} />}
@@ -90,22 +90,22 @@ function SearchIntelligenceHUD() {
     if (!metadata) return null;
 
     return (
-        <div className="glass search-intelligence-hud fadeIn">
+        <div className="glass search-intelligence-hud fadeIn parallax-element">
             <div className="metadata-header">
                 <img src={metadata.avatar} alt="" className="meta-avatar" />
                 <div className="meta-info">
                     <span className="meta-title">{metadata.name}</span>
-                    <span className="meta-lang">{metadata.language}</span>
+                    <span className="meta-lang">{metadata.type === 'repo' ? metadata.language : metadata.language}</span>
                 </div>
             </div>
             <p className="meta-desc">{metadata.description}</p>
             <div className="meta-stats">
                 <div className="meta-stat">
-                    <span className="stat-label">STARS</span>
+                    <span className="stat-label">{metadata.type === 'repo' ? 'STARS' : 'REPOS'}</span>
                     <span className="stat-value">{metadata.stars.toLocaleString()}</span>
                 </div>
                 <div className="meta-stat">
-                    <span className="stat-label">FORKS</span>
+                    <span className="stat-label">{metadata.type === 'repo' ? 'FORKS' : 'FOLLOWERS'}</span>
                     <span className="stat-value">{metadata.forks.toLocaleString()}</span>
                 </div>
             </div>
@@ -115,9 +115,23 @@ function SearchIntelligenceHUD() {
 
 export default function Home() {
   const [url, setUrl] = useState('');
+  const mainRef = useRef<HTMLElement>(null);
   const timelineYear = useStore((state) => state.timelineYear);
   const setTimelineYear = useStore((state) => state.setTimelineYear);
   const { fetchGraph, loadStaticUniverse, loading, error, graph, cameraMode, setCameraMode, currentRepo } = useStore();
+
+  useEffect(() => {
+    const handleMove = (e: MouseEvent) => {
+        if (mainRef.current) {
+            const x = (e.clientX / window.innerWidth - 0.5) * 20;
+            const y = (e.clientY / window.innerHeight - 0.5) * 20;
+            mainRef.current.style.setProperty('--mx', `${x}px`);
+            mainRef.current.style.setProperty('--my', `${y}px`);
+        }
+    };
+    window.addEventListener('mousemove', handleMove);
+    return () => window.removeEventListener('mousemove', handleMove);
+  }, []);
 
   useEffect(() => {
     // Initial Load: Code Cosmos Snapshot (Cost Neutral)
@@ -127,9 +141,16 @@ export default function Home() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!url) return;
-    const [owner, repo] = url.split('/');
-    if (owner && repo) {
-      fetchGraph(owner, repo);
+    const parts = url.split('/');
+    const owner = parts[parts.length - 2] || parts[0];
+    const repo = url.includes('/') && parts.length > 1 ? parts[parts.length - 1] : '';
+    
+    // If input is a URL, extract owner/repo
+    if (url.startsWith('http')) {
+        const urlParts = url.replace('https://github.com/', '').split('/');
+        fetchGraph(urlParts[0], urlParts[1] || '');
+    } else {
+        fetchGraph(owner, repo);
     }
   };
 
@@ -143,7 +164,7 @@ export default function Home() {
   const { isLaunched, setLaunched } = useStore();
 
   return (
-    <main className="scene-container cosmos-bg">
+    <main ref={mainRef} className="scene-container cosmos-bg">
       <CosmosScene />
       
       {!isLaunched ? (

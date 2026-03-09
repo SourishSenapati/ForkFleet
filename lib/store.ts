@@ -18,6 +18,7 @@ interface ForkFleetState {
     stars: number;
     forks: number;
     language: string;
+    type: 'repo' | 'profile';
   } | null;
   
   fetchGraph: (owner: string, repo: string) => Promise<void>;
