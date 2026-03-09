@@ -79,25 +79,42 @@ export const useStore = create<ForkFleetState>((set) => ({
   },
 
   fetchGraph: async (owner, repo) => {
-    set({ loading: true, error: null, currentRepo: { owner, repo }, selectedNodeIndex: null, metadata: null });
+    set({ loading: true, error: null, currentRepo: repo ? { owner, repo } : null, selectedNodeIndex: null, metadata: null });
     
     try {
-      // 1. Fetch live repository metadata for the HUD
-      const repoResp = await fetch(`https://api.github.com/repos/${owner}/${repo}`);
-      if (repoResp.ok) {
-        const repoData = await repoResp.json();
-        set({ metadata: {
-          name: repoData.full_name,
-          description: repoData.description || 'NO DESCRIPTION AVAILABLE',
-          avatar: repoData.owner.avatar_url,
-          stars: repoData.stargazers_count,
-          forks: repoData.forks_count,
-          language: repoData.language || 'UNKNOWN'
-        }});
+      if (repo) {
+        // COORDINATES: REPOSITORY LENS
+        const repoResp = await fetch(`https://api.github.com/repos/${owner}/${repo}`);
+        if (repoResp.ok) {
+          const repoData = await repoResp.json();
+          set({ metadata: {
+            name: repoData.full_name,
+            description: repoData.description || 'NO DESCRIPTION AVAILABLE',
+            avatar: repoData.owner.avatar_url,
+            stars: repoData.stargazers_count,
+            forks: repoData.forks_count,
+            language: repoData.language || 'UNKNOWN',
+            type: 'repo'
+          }});
+        }
+      } else {
+        // COORDINATES: PROFILE LENS
+        const userResp = await fetch(`https://api.github.com/users/${owner}`);
+        if (userResp.ok) {
+            const userData = await userResp.json();
+            set({ metadata: {
+                name: userData.login,
+                description: userData.bio || 'PILOT BIO UNKNOWN',
+                avatar: userData.avatar_url,
+                stars: userData.public_repos,
+                forks: userData.followers,
+                language: userData.location || 'DEEP SPACE',
+                type: 'profile'
+            }});
+        }
       }
 
-      // 2. Fetch graph data (Fails over to static universe if target is not precomputed)
-      // Note: In strict static mode, we primarily serve the precomputed universe.json
+      // 2. Fetch graph data (Failover to static)
       const response = await fetch(`${window.location.pathname.startsWith('/ForkFleet') ? '/ForkFleet' : ''}/data/universe.json`);
       if (response.ok) {
         const data: UniverseData = await response.json();
